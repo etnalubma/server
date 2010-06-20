@@ -24,7 +24,7 @@ int main(int argc, char *argv[]){
     int ocu;
     int *ocurrencies;
     double tattending, tmp = 0;
-    int i, attended, sample;
+    int i,j, attended, sample;
     double t, a, s, p;
     int q, k;
     double fi, fj, t_zero, d_zero;
@@ -127,10 +127,50 @@ int main(int argc, char *argv[]){
         fprintf(file, "%f %f\n", results[i], deltab*gamma(results[i], alpha, beta, gamma_fn));
     }
     fclose(file);  
+
+    for (k=4;k<40;k++) {    
+        int y_5 = 0, cumple = 1;
+        
+        probabilities = calloc(k, sizeof(double));
+        ocurrencies = calloc(k, sizeof(int));
+        deltab = (1.5)/(double)k;
+
+        for(i=0; i<k; i++){
+            for(j=0;j<sample;j++) {
+                if (results[j] > (deltab*i) && results[j] <= (deltab*(i+1)))
+                    ocurrencies[i]++;
+            } 
+        }
+        printf("Gamma\n");
+        printf("=====\n");
+            
+        for(i=0; i<k; i++){
+            fi = cumulative_gamma((i+1)*deltab, alpha, beta);
+            fj = cumulative_gamma(i*deltab, alpha, beta);
+            /* printf("(%f, %f], ", (i-1)*deltab, i*deltab); */
+            probabilities[i] = fi - fj;
+        }
+
+        for(i=0; i<k; i++)
+            if (sample*probabilities[i] < 5) 
+               y_5++;
+        
+        for(i=0; i<k; i++)
+            if (sample*probabilities[i] < 5*(double)y_5/(double)k)
+                cumple = 0;
+        
+        printf("Cumple: %s\n", cumple==0 ? "no" : "si");
+        
+        t_zero = calculate_t(k, sample, ocurrencies, probabilities);
+        
+        printf("Intervalos %d\n", k);
+        printf("T cero %f\n", t_zero);
+        printf("Chi2 %f\n", chi_square(k-1-2, t_zero));    
+        free(ocurrencies);
+        free(probabilities);
+    }
     
-    k = 25;
-    probabilities = calloc(k, sizeof(double));
-    ocurrencies = calloc(k, sizeof(int));
+    /*
     
     file = fopen("histo.data", "r");    
     file2 = fopen("h.dat", "w");        
@@ -182,35 +222,15 @@ int main(int argc, char *argv[]){
     printf("T cero %f\n", t_zero);
     printf("Chi2 %f\n", chi_square(k-1-2, t_zero));    
 */
-    printf("Gamma\n");
-    printf("=====\n");
-        
-    file = fopen("histo.data", "r");
-    file2 = fopen("gamma_acum.dat", "w");        
-    for(i=0; i<k; i++){
-        freturn = fscanf(file, "%f %i\n", &interval, &ocu);
-        if(freturn!=EOF){
-            ocurrencies[i] = ocu;
-            fi = cumulative_gamma(i*deltab, alpha, beta);
-            fj = cumulative_gamma((i-1)*deltab, alpha, beta);
-            /*fprintf(file2, "%f %f\n", interval, fi-fj);*/
-            probabilities[i] = fi - fj;
-        }
-    }
-    fclose(file);    
-    fclose(file2);    
-    
-    t_zero = calculate_t(k, sample, ocurrencies, probabilities);
-    printf("T cero %f\n", t_zero);
-    printf("Chi2 %f\n", chi_square(k-1-2, 66));    
-    
-    d_zero = calculate_d(sample, results, &acum_gamma);
+
+
+    /* d_zero = calculate_d(sample, results, &acum_gamma);
     printf("D zero: %f\n", d_zero);
     printf("p-valor: %f\n", simulate_d(rg, 10000, sample, d_zero));
     free(probabilities);
     free(ocurrencies);
     free(results);         
-        
+         */
     printf("\n");
     
     rg = destroy_rg(rg);

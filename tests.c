@@ -22,7 +22,7 @@ double calculate_t(int k, int m, int *n, double *p){
         if(p[i] != 0){
             tmp = pow(n[i] - m*p[i], 2)/(m*p[i]);
             t += tmp;
-            printf("ocu: %i prob: %f m*prob: %f t:%f\n", n[i], p[i], m*p[i], t);
+            /* printf("ocu: %i prob: %f m*prob: %f t:%f\n", n[i], p[i], m*p[i], t);*/
             }
     }
     
