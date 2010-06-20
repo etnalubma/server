@@ -19,4 +19,18 @@ void sample_prob(estimate e, float *prob, int *samples);
 
 int confidence_interval(float sigma, float z, float delta);
 
+double estimate_mean(int n, double *sample);
+
+double estimate_s2(int n, double *sample);
+
+double estimate_median(int n, double *sample);
+
+double estimate_skewness(int n, double *sample);
+
+double estimate_ln_mean(int n, double *sample);
+
+double estimate_ln_s2(int n, double *sample);
+
+double estimate_gamma_t(int n, double *sample);
+
 #endif

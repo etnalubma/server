@@ -79,3 +79,74 @@ void sample_prob(estimate e, float *prob, int *samples){
 int confidence_interval(float sigma, float z, float delta) {   
     return delta < 2*z*sigma;
 }
+
+double estimate_mean(int n, double *sample){
+    int i=0;
+    double sum = 0;
+    
+    for(i=0; i<n; i++){
+        sum += sample[i];
+    }
+    return sum/(double)n;
+}
+
+double estimate_s2(int n, double *sample){
+    int i = 0;
+    double sum = 0;
+    double mean = estimate_mean(n, sample);
+    
+    for(i=0; i<n; i++){
+        sum += pow(sample[i] - mean, 2);
+    }
+    
+    return sum/(double)(n-1);
+}
+
+double estimate_median(int n, double *sample){    
+    return n%2 == 0 ? (sample[n/2 - 1] + sample[n/2])/2. : sample[(n+1)/2 - 1];
+}
+
+double estimate_skewness(int n, double *sample){
+    int i = 0;
+    double sum = 0;
+    double mean = estimate_mean(n, sample);
+    double s2 = estimate_s2(n, sample);
+    
+    for(i=0; i<n; i++){
+        sum += pow(sample[i] - mean, 3) / (double)n;
+    }
+    
+    return sum/pow(s2, 3./2.);
+}
+
+
+double estimate_ln_mean(int n, double *sample){
+    int i=0;
+    double sum = 0;
+    
+    for(i=0; i<n; i++){
+        sum += log(sample[i]);
+    }
+    return sum/(double)n;
+}
+
+double estimate_ln_s2(int n, double *sample){
+    int i = 0;
+    double sum = 0;
+    double mean = estimate_ln_mean(n, sample);
+    
+    for(i=0; i<n; i++){
+        sum += pow(log(sample[i]) - mean, 2);
+    }
+    
+    return sum/(double)n;
+
+}
+
+double estimate_gamma_t(int n, double *sample){
+    double ln_mean = estimate_ln_mean(n, sample);
+    double mean = estimate_mean(n, sample);
+    
+    double t = 1./(log(mean) - ln_mean);
+    return t;
+}
