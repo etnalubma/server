@@ -12,64 +12,57 @@
 
 #define BITS 32
 
-float server_time(randgen rg);
-double acum_gamma(double x);
+void run_server_simulation(randgen rg, double *results, int n);
+void write_histogram(double *results, int n);
+void write_scatter(double *results, int n);
+void write_boxplot(double min, double max, double median, double median1, double median2);
+
+void normal_frequencies(double *results, int n, double mean, double s2, double deltab);
+void lognormal_frequencies(double *results, int n, double mean, double s2, double deltab);
+void gamma_frequencies(double *results, int n, double alpha, double beta, double gamma_fn, double deltab);
+
+void calculate_probabilities_gamma(int k, double deltab, double alpha, double beta, double gamma_fn, double *probabilities);
+void calculate_probabilities_lognormal(int k, double deltab, double ln_mean, double ln_s2, double *probabilities);
+void calculate_probabilities_normal(int k, double deltab, double mean, double s2, double *probabilities);
+void calculate_ocurrencies(double *results, int n, int k, double deltab, int *ocurrencies);
+
+double cumulative_gamma(double x);
+double cumulative_lognormal(double x);
+double cumulative_normal(double x);
 
 int main(int argc, char *argv[]){
     randgen rg;
-    server srv;
-    FILE *file, *file2;
-    int freturn = 1;
-    float interval;
-    int ocu;
+
     int *ocurrencies;
-    double tattending, tmp = 0;
-    int i,j, attended, sample;
-    double t, a, s, p;
-    int q, k;
-    double fi, fj, t_zero, d_zero;
+
+    int sample;
+    int k;
+    double t_zero, d_zero;
     double *results, *probabilities;   
     double mean, median, median1, median2, s2, skewness, min, max, ln_mean, ln_s2, alpha, beta, gamma_fn, deltab;
-    
-    /*Tiempo de atencion*/
-    t = 8.;
-    /*Razon de arrivos*/
-    a = 4.;
-    /*Razon de servicio*/
-    s = 4.5;
-    /*Cola de servidor*/
-    q = 4;
-    
+        
     rg = create_rg(RAN2, 5, BITS);
-    printf("\n");
-    printf("q: %i, t: %f, a: %f, s: %f\n", q, t, a, s);                  
-    printf("\n");    
+    printf("\n");        
 
     sample = 500;
     results = calloc(sample, sizeof(double));
-    file = fopen("histogram.dat", "w");
     
-    for(i=0;i<sample;i++){
-        srv = create_server(rg, t, a, s, q);
-        tmp = run_server(srv, &attended, &tattending);
-        fprintf(file, "%f\n", tmp);
-        results[i] = tmp;        
-        
-        srv = destroy_server(srv);
-    }
-    fclose(file);   
+    run_server_simulation(rg, results, sample);
+
+    /*Actividad 1*/    
+    write_scatter(results, sample);
     
-    file = fopen("scatter.dat", "w");
-    for(i=0;i<sample-1;i++){
-        fprintf(file, "%f %f\n", results[i], results[i+1]);
-    }
-    fclose(file);       
-
-
+    
+    /*Actividad 2*/
     printf("Estadisticos\n");
     printf("============\n");        
+    
+    /*2.b)*/
+    write_histogram(results, sample);   
+        
     bublesort(sample, results);
 
+    /*2.a)*/
     min = results[0];
     max = results[sample-1];
     mean = estimate_mean(sample, results);
@@ -89,168 +82,280 @@ int main(int argc, char *argv[]){
     printf("Mediana 2do cuartil: %f\n", median2);                
     printf("Varianza: %f\n", s2);
     printf("Asimetria: %f\n", skewness);
-    printf("\n");
-    
-    file = fopen("boxplot.dat", "w");
-    fprintf(file, "%i %f %f %f %f %f\n", 1, min, median1, median, median2, max);
-    fclose(file);
-    
-    
+    printf("\n");   
+
+    /*2.c)*/
+    write_boxplot(min, max, median, median1, median2);
+            
+    /*Actividad 3*/
+        
     printf("Distribuciones\n");
     printf("==============\n");    
     printf("Normal(%f, %f)\n", mean, s2*((sample-1)/(double)sample));
     printf("Lognormal(%f, %f)\n", ln_mean, ln_s2);
     
-    alpha = 10;/*9.539; /*Valor tabulado por T = 18.741333 = estimate_gamma_t(sample, results)*/
-
-    gamma_fn = 362880; /*129979; /*integrate x^(alpha - 1)*e^(-x) from 0 to infinity*/
+    alpha = 9.539; /*Valor tabulado por T = 18.741333 = estimate_gamma_t(sample, results)*/
+    gamma_fn = 129979; /*integrate x^(alpha - 1)*e^(-x) from 0 to infinity*/
     beta = mean/alpha;
     printf("Gamma(%f, %f)\n", alpha, beta);    
-    printf("\n");
-    
-    deltab = 0.0625;
-    
-    file = fopen("normal.dat", "w");    
-    for(i=0;i<sample;i++){
-        fprintf(file, "%f %f\n", results[i], deltab*normal(results[i], mean, s2));
-    }
-    fclose(file);  
-    
-    file = fopen("lognormal.dat", "w");    
-    for(i=0;i<sample;i++){
-        fprintf(file, "%f %f\n", results[i], deltab*lognormal(results[i], ln_mean, ln_s2));
-    }
-    fclose(file);  
-    
-    file = fopen("gamma.dat", "w");    
-    for(i=0;i<sample;i++){
-        fprintf(file, "%f %f\n", results[i], deltab*gamma(results[i], alpha, beta, gamma_fn));
-    }
-    fclose(file);  
 
-    for (k=4;k<40;k++) {    
-        int y_5 = 0, cumple = 1;
-        
-        probabilities = calloc(k, sizeof(double));
-        ocurrencies = calloc(k, sizeof(int));
-        deltab = (1.5)/(double)k;
-
-        for(i=0; i<k; i++){
-            for(j=0;j<sample;j++) {
-                if (results[j] > (deltab*i) && results[j] <= (deltab*(i+1)))
-                    ocurrencies[i]++;
-            } 
-        }
-        printf("Gamma\n");
-        printf("=====\n");
-            
-        for(i=0; i<k; i++){
-            fi = cumulative_gamma((i+1)*deltab, alpha, beta);
-            fj = cumulative_gamma(i*deltab, alpha, beta);
-            /* printf("(%f, %f], ", (i-1)*deltab, i*deltab); */
-            probabilities[i] = fi - fj;
-        }
-
-        for(i=0; i<k; i++)
-            if (sample*probabilities[i] < 5) 
-               y_5++;
-        
-        for(i=0; i<k; i++)
-            if (sample*probabilities[i] < 5*(double)y_5/(double)k)
-                cumple = 0;
-        
-        printf("Cumple: %s\n", cumple==0 ? "no" : "si");
-        
-        t_zero = calculate_t(k, sample, ocurrencies, probabilities);
-        
-        printf("Intervalos %d\n", k);
-        printf("T cero %f\n", t_zero);
-        printf("Chi2 %f\n", chi_square(k-1-2, t_zero));    
-        free(ocurrencies);
-        free(probabilities);
-    }
+    printf("\n");    
     
-    /*
+    /*Actividad 4*/
+    k = 25;
+    deltab = (max+0.01)/k;
+    /*4.a)*/    
+       
+    normal_frequencies(results, sample, mean, s2*((sample-1)/(double)sample), deltab);
+    lognormal_frequencies(results, sample, ln_mean, ln_s2, deltab);
+    gamma_frequencies(results, sample, alpha, beta, gamma_fn, deltab);
     
-    file = fopen("histo.data", "r");    
-    file2 = fopen("h.dat", "w");        
-    for(i=0; i<k; i++){
-        freturn = fscanf(file, "%f %i\n", &interval, &ocu);
-        if(freturn!=EOF){
-            p = ocu/(double)sample;
-            fprintf(file2, "%f %f\n", interval, p);
-        }
-    }
-    fclose(file);
-    fclose(file2);
-    /*
-    printf("Normal\n");
+    /*4.b)*/
+    
+    ocurrencies = calloc(k, sizeof(int));    
+    calculate_ocurrencies(results, sample, k, deltab, ocurrencies);
+    ocurrencies[k-1] = 0; /*Se descarta la ocurrencia del maximo*/
+    
+    printf("\nNormal\n");
     printf("======\n");
+    probabilities = calloc(k, sizeof(double));    
 
-    file = fopen("histo.data", "r");    
-    for(i=0; i<k-1; i++){
-        freturn = fscanf(file, "%f %i\n", &interval, &ocu);
-        if(freturn!=EOF){
-            ocurrencies[i] = ocu;
-            fi = cumulative_normal((i+1)*deltab, mean, s2*((sample-1)/(double)sample));
-            fj = cumulative_normal(i*deltab, mean, s2*((sample-1)/(double)sample));
-            probabilities[i] = fi - fj;
-        }
-    }
-    fclose(file);
+    calculate_probabilities_normal(k, deltab, mean, s2*((sample-1)/(double)sample), probabilities);    
+
+    t_zero = calculate_t(k, sample, ocurrencies, probabilities);    
+    printf("T cero %f\n", t_zero);
+    printf("Chi2 %f\n", chi_square(k-1-2, t_zero));    
     
+    d_zero = calculate_d(sample, results, &cumulative_normal);
+    printf("D zero: %f\n", d_zero);
+    printf("p-valor: %f\n", simulate_d(rg, 1000, sample, d_zero));
+    
+    free(probabilities);    
+        
+    printf("\nLog Normal\n");
+    printf("==========\n");
+    probabilities = calloc(k, sizeof(double));    
+
+    calculate_probabilities_lognormal(k, deltab, ln_mean, ln_s2, probabilities);
+
     t_zero = calculate_t(k, sample, ocurrencies, probabilities);
     printf("T cero %f\n", t_zero);
     printf("Chi2 %f\n", chi_square(k-1-2, t_zero));
+       
+    d_zero = calculate_d(sample, results, &cumulative_lognormal);
+    printf("D zero: %f\n", d_zero);
+    printf("p-valor: %f\n", simulate_d(rg, 1000, sample, d_zero));
     
-    printf("LogNormal\n");
-    printf("=========\n");
+    free(probabilities);    
+
+    printf("\nGamma\n");
+    printf("=====\n");
+    probabilities = calloc(k, sizeof(double));
     
-    file = fopen("histo.data", "r");    
-    for(i=0; i<k-1; i++){
-        freturn = fscanf(file, "%f %i\n", &interval, &ocu);
-        if(freturn!=EOF){
-            ocurrencies[i] = ocu;
-            fi = cumulative_normal(log((i+1)*deltab), ln_mean, ln_s2);
-            fj = cumulative_normal(log(i*deltab), ln_mean, ln_s2);
-            probabilities[i] = fi - fj;
-        }
-    }
-    fclose(file);    
+    calculate_probabilities_gamma(k, deltab, alpha, beta, gamma_fn, probabilities);
     
-    t_zero = calculate_t(k, sample, ocurrencies, probabilities);
+    t_zero = calculate_t(k, sample, ocurrencies, probabilities);    
     printf("T cero %f\n", t_zero);
     printf("Chi2 %f\n", chi_square(k-1-2, t_zero));    
-*/
-
-
-    /* d_zero = calculate_d(sample, results, &acum_gamma);
-    printf("D zero: %f\n", d_zero);
-    printf("p-valor: %f\n", simulate_d(rg, 10000, sample, d_zero));
-    free(probabilities);
-    free(ocurrencies);
-    free(results);         
-         */
-    printf("\n");
     
+    d_zero = calculate_d(sample, results, &cumulative_gamma);
+    printf("D zero: %f\n", d_zero);
+    printf("p-valor: %f\n", simulate_d(rg, 1000, sample, d_zero));
+  
+    free(probabilities);
+    
+    free(ocurrencies);
+    free(results);             
     rg = destroy_rg(rg);
-
+    printf("\n");
     return 0;
 }
 
-float server_time(randgen rg){
-    server srv;
-    double t, tattending;
+void run_server_simulation(randgen rg, double *results, int n){
+    double t, a, s;
+    double tattending;
     int attended;
+    int q, i;
     
-    srv = create_server(rg, 8., 4., 4.2, 4);
-    t = run_server(srv, &attended, &tattending);
-    srv = destroy_server(srv);
-    return t;
+    server srv;
+    
+    /*Tiempo de atencion*/
+    t = 8.;
+    /*Razon de arrivos*/
+    a = 4.;
+    /*Razon de servicio*/
+    s = 4.5;
+    /*Cola de servidor*/
+    q = 4;
+    
+    printf("\n");
+    printf("q: %i, t: %f, a: %f, s: %f\n", q, t, a, s);                  
+    printf("\n");    
+    
+    for(i=0;i<n;i++){
+        srv = create_server(rg, t, a, s, q);
+        results[i] = run_server(srv, &attended, &tattending);
+        srv = destroy_server(srv);        
+    }
 }
 
-double acum_gamma(double x){
-    return cumulative_gamma(x, 10.000000, 0.050153);
+void write_histogram(double *results, int n){
+    FILE *file;
+    int i;
+    file = fopen("histogram.dat", "w");
+    
+    for(i=0;i<n;i++){
+        fprintf(file, "%f\n", results[i]);
+    }
+    
+    fclose(file);
+}   
+
+void write_scatter(double *results, int n){
+    FILE *file;
+    int i;
+    file = fopen("scatter.dat", "w");
+    
+    for(i=0;i<n-1;i++){
+        fprintf(file, "%f %f\n", results[i], results[i+1]);
+    }
+    fclose(file);
 }
 
+void write_boxplot(double min, double max, double median, double median1, double median2){
+    FILE *file;
+    
+    file = fopen("boxplot.dat", "w");
+    fprintf(file, "%i %f %f %f %f %f\n", 1, min, median1, median, median2, max);
+    fclose(file);
+}
 
+void normal_frequencies(double *results, int n, double mean, double s2, double deltab){
+    FILE *file;
+    int i;
+    file = fopen("normal.dat", "w");    
+    for(i=0;i<n;i++){
+        fprintf(file, "%f %f\n", results[i], n*deltab*normal(results[i], mean, s2));
+    }
+    fclose(file);
+}
+
+void lognormal_frequencies(double *results, int n, double mean, double s2, double deltab){
+    FILE *file;
+    int i;
+    file = fopen("lognormal.dat", "w");    
+    for(i=0;i<n;i++){
+        fprintf(file, "%f %f\n", results[i], n*deltab*lognormal(results[i], mean, s2));
+    }
+    fclose(file);  
+}
+
+void gamma_frequencies(double *results, int n, double alpha, double beta, double gamma_fn, double deltab){
+    FILE *file;    
+    int i;
+    file = fopen("gamma.dat", "w");    
+    for(i=0;i<n;i++){
+        fprintf(file, "%f %f\n", results[i], n*deltab*gamma(results[i], alpha, beta, gamma_fn));
+    }
+    fclose(file);  
+}
+
+void calculate_ocurrencies(double *results, int n, int k, double deltab, int *ocurrencies){
+    int i, j;
+    for(i=0; i<k; i++){
+        for(j=0;j<n;j++) {
+            if (results[j] > (deltab*i) && results[j] <= (deltab*(i+1)))
+                ocurrencies[i]++;
+        }
+    }
+}
+
+void calculate_probabilities_normal(int k, double deltab, double mean, double s2, double *probabilities){
+    int i;
+    double m, y;
+    m = deltab/2.;
+    for(i=0; i<k; i++){
+        y = i*deltab + m;
+        probabilities[i] = deltab*normal(y, mean, s2);
+    }
+
+}
+
+void calculate_probabilities_lognormal(int k, double deltab, double ln_mean, double ln_s2, double *probabilities){
+    int i;
+    double m, y;
+    m = deltab/2.;
+    for(i=0; i<k; i++){
+        y = i*deltab + m;
+        probabilities[i] = deltab*lognormal(y, ln_mean, ln_s2);
+    }
+
+}
+
+void calculate_probabilities_gamma(int k, double deltab, double alpha, double beta, double gamma_fn, double *probabilities){
+    int i;
+    double m, y;
+    m = deltab/2.;
+    for(i=0; i<k; i++){
+        y = i*deltab + m;
+        probabilities[i] = deltab*gamma(y, alpha, beta, gamma_fn);
+    }
+}
+
+double cumulative_normal(double x){
+    int i, k = 200;
+    double max = 1.444631;
+    double deltab = (max+0.01)/k;
+    double m, y, res=0;
+    double mean, s2;
+    mean = 0.501527;
+    s2 = 0.027762;
+    
+    m = deltab/2.;
+    i = 0;
+    while(x > deltab*i){
+        y = i*deltab + m;
+        res += deltab*normal(y, mean, s2);
+        i++;
+    }
+    return res;
+}
+
+double cumulative_lognormal(double x){
+    int i, k = 200;
+    double max = 1.444631;
+    double deltab = (max+0.01)/k;
+    double m, y, res=0;
+    double ln_mean, ln_s2;
+    ln_mean = -0.743456;
+    ln_s2 = 0.107764;
+    
+    m = deltab/2.;
+    i = 0;
+    while(x > deltab*i){
+        y = i*deltab + m;
+        res += deltab*lognormal(y, ln_mean, ln_s2);
+        i++;
+    }
+    return res;
+}
+
+double cumulative_gamma(double x){
+    int i, k = 200;
+    double max = 1.444631;
+    double deltab = (max+0.01)/k;
+    double m, y, res=0;
+    double alpha, beta, gamma_fn;
+    alpha = 9.539000;
+    beta = 0.052576;
+    gamma_fn = 129979;
+    
+    m = deltab/2.;
+    i = 0;
+    while(x > deltab*i){
+        y = i*deltab + m;
+        res += deltab*gamma(y, alpha, beta, gamma_fn);
+        i++;
+    }
+    return res;
+}

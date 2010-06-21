@@ -19,11 +19,10 @@ double calculate_t(int k, int m, int *n, double *p){
     double t, tmp=0;
     
     for(i=0;i<k;i++){
-        if(p[i] != 0){
-            tmp = pow(n[i] - m*p[i], 2)/(m*p[i]);
-            t += tmp;
-            /* printf("ocu: %i prob: %f m*prob: %f t:%f\n", n[i], p[i], m*p[i], t);*/
-            }
+        tmp = pow(n[i] - m*p[i], 2)/(m*p[i]);
+        t += tmp;
+/*        printf("%i \t %f \t %f \n", n[i], m*p[i], pow(n[i] - m*p[i], 2)/(m*p[i]));*/
+
     }
     
     return t;
@@ -67,12 +66,12 @@ double calculate_d(int n, double *y, double (*f)(double)){
         tmp = (i+1)/(double)n - (*f)(y[i]);
         d1 = MAX(d1, tmp);
     }
-    
+
     for(i=0; i<n; i++){
         tmp = (*f)(y[i]) - i/(double)n;
-        d2 = MAX(d2, tmp);
+        d2 = MAX(d2, tmp);        
     }    
-    
+
     return MAX(d1, d2);
 }
 
