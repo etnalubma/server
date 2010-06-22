@@ -3,5 +3,5 @@
 
 float gammp(float a, float x);
 float gammq(float a, float x);
-
+float erff(float x);
 #endif

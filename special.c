@@ -118,3 +118,6 @@ float gammln(float xx){
     return -tmp+log(2.5066282746310005*ser/x);
 }
 
+float erff(float x){
+    return x<0.0 ? -gammp(0.5, pow(x,2)) : gammp(0.5, pow(x,2));
+}

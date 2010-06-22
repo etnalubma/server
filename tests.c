@@ -17,11 +17,11 @@ double chi_square(double a, double x){
 double calculate_t(int k, int m, int *n, double *p){
     int i;
     double t, tmp=0;
-    
+
     for(i=0;i<k;i++){
         tmp = pow(n[i] - m*p[i], 2)/(m*p[i]);
         t += tmp;
-/*        printf("%i \t %f \t %f \n", n[i], m*p[i], pow(n[i] - m*p[i], 2)/(m*p[i]));*/
+/*        printf("%e \t %f \t %f \t %f \t %f\n", p[i], m*p[i], n[i] - m*p[i], pow(n[i] - m*p[i], 2), tmp);*/
 
     }
     

@@ -9,7 +9,7 @@
 #include "sort.h"
 #include "densities.h"
 #include "tests.h"
-
+#include "special.h"
 #define BITS 32
 
 void run_server_simulation(randgen rg, double *results, int n);
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]){
     double *results, *probabilities;   
     double mean, median, median1, median2, s2, skewness, min, max, ln_mean, ln_s2, alpha, beta, gamma_fn, deltab;
         
-    rg = create_rg(RAN2, 5, BITS);
+    rg = create_rg(RAN2, 1, BITS);
     printf("\n");        
 
     sample = 500;
@@ -94,8 +94,8 @@ int main(int argc, char *argv[]){
     printf("Normal(%f, %f)\n", mean, s2*((sample-1)/(double)sample));
     printf("Lognormal(%f, %f)\n", ln_mean, ln_s2);
     
-    alpha = 9.539; /*Valor tabulado por T = 18.741333 = estimate_gamma_t(sample, results)*/
-    gamma_fn = 129979; /*integrate x^(alpha - 1)*e^(-x) from 0 to infinity*/
+    alpha = 9.789; /*Valor tabulado por T = 19.110559 = estimate_gamma_t(sample, results)*/
+    gamma_fn = 226175; /*integrate x^(alpha - 1)*e^(-x) from 0 to infinity*/
     beta = mean/alpha;
     printf("Gamma(%f, %f)\n", alpha, beta);    
 
@@ -104,6 +104,7 @@ int main(int argc, char *argv[]){
     /*Actividad 4*/
     k = 25;
     deltab = (max+0.01)/k;
+    
     /*4.a)*/    
        
     normal_frequencies(results, sample, mean, s2*((sample-1)/(double)sample), deltab);
@@ -114,10 +115,10 @@ int main(int argc, char *argv[]){
     
     ocurrencies = calloc(k, sizeof(int));    
     calculate_ocurrencies(results, sample, k, deltab, ocurrencies);
-    ocurrencies[k-1] = 0; /*Se descarta la ocurrencia del maximo*/
     
     printf("\nNormal\n");
     printf("======\n");
+    
     probabilities = calloc(k, sizeof(double));    
 
     calculate_probabilities_normal(k, deltab, mean, s2*((sample-1)/(double)sample), probabilities);    
@@ -297,65 +298,37 @@ void calculate_probabilities_gamma(int k, double deltab, double alpha, double be
     double m, y;
     m = deltab/2.;
     for(i=0; i<k; i++){
-        y = i*deltab + m;
+        y =  i*deltab + m;
         probabilities[i] = deltab*gamma(y, alpha, beta, gamma_fn);
     }
 }
 
 double cumulative_normal(double x){
-    int i, k = 200;
-    double max = 1.444631;
-    double deltab = (max+0.01)/k;
-    double m, y, res=0;
-    double mean, s2;
-    mean = 0.501527;
-    s2 = 0.027762;
+    double y, mean, s2;
+
+    mean = 0.509307;
+    s2 = 0.026826;
     
-    m = deltab/2.;
-    i = 0;
-    while(x > deltab*i){
-        y = i*deltab + m;
-        res += deltab*normal(y, mean, s2);
-        i++;
-    }
-    return res;
+    y = (x-mean)/sqrt(s2);
+    return 0.5*(1 + erff(y/sqrt(2.)));
 }
 
 double cumulative_lognormal(double x){
-    int i, k = 200;
-    double max = 1.444631;
-    double deltab = (max+0.01)/k;
-    double m, y, res=0;
-    double ln_mean, ln_s2;
-    ln_mean = -0.743456;
-    ln_s2 = 0.107764;
-    
-    m = deltab/2.;
-    i = 0;
-    while(x > deltab*i){
-        y = i*deltab + m;
-        res += deltab*lognormal(y, ln_mean, ln_s2);
-        i++;
-    }
-    return res;
+    double ln_mean, ln_s2, y;
+
+    ln_mean = -0.727032;
+    ln_s2 = 0.108136;
+
+    y = (log(x) - ln_mean)/sqrt(ln_s2); /*log(x)~N(ln_mean, ln_s2) => y ~ N(0,1)*/
+    return 0.5*(1 + erff(y/sqrt(2.)));
 }
 
 double cumulative_gamma(double x){
-    int i, k = 200;
-    double max = 1.444631;
-    double deltab = (max+0.01)/k;
-    double m, y, res=0;
     double alpha, beta, gamma_fn;
-    alpha = 9.539000;
-    beta = 0.052576;
-    gamma_fn = 129979;
     
-    m = deltab/2.;
-    i = 0;
-    while(x > deltab*i){
-        y = i*deltab + m;
-        res += deltab*gamma(y, alpha, beta, gamma_fn);
-        i++;
-    }
-    return res;
+    alpha = 9.789000;
+    beta = 0.052028;
+    gamma_fn = 226175;
+    
+    return gammp(alpha, x/beta);
 }
