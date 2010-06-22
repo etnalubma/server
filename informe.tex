@@ -74,6 +74,8 @@ los datos.
 
 \section{Bondad de los ajustes}
 
+
+
 \begin{figure}
   \centering
   \includegraphics[scale=0.5]{freq-normal.png} 
@@ -94,5 +96,30 @@ los datos.
   \caption{Muestra/Gamma}
   \label{freq-gamma}
 \end{figure}
+
+\begin{table}[ht]
+\caption{Resultado de las estimaciones de p-valor}
+\centering
+\begin{tabular}{c c c c c}
+\hline\hline
+Distribuci\'on & $T_0$ & $\chi^2$ & $D_0$ & p-valor (K-S)\\ [0.5ex]
+\hline
+Normal & 68.832119 & 0.000001 & 0.055291 & 0.109000 \\
+LogNormal & 26.257540 & 0.240789 & 0.033047 & 0.651000 \\
+Gamma & 18.147321 & 0.697219 & 0.025335 & 0.900000 \\
+\hline
+\end{tabular}
+\label{estimators}
+\end{table}
+
+\section{Conclusiones}
+
+Observando las figuras comparativas en primera instancia Gamma parece ser la que mejor se ajusta a distribuci\'on simulada, sin embargo es muy 
+sutil la diferencia. 
+Analizando los valores de $\chi^2$ y el p-valor a partir de Kolmogorov Smirnov (K-S) en el cuadro \ref{estimators} se puede observar que la probabilidad
+de ser la distribuci\'on normal la adecuada es muy baja.
+En el caso de la LogNormal, la $\chi^2$ genera un n\'umero mas razonable, que en K-S se incrementa notablemente a un 65\% de probabilidades de ser cierta
+la hip\'otesis.
+Finalmente, se verifica que la distribuci\'on Gamma se ajusta mucho mejor, dando un 70\% en $\chi^2$ y 90\% en K-S. 
 
 \end{document}
