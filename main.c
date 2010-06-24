@@ -107,9 +107,9 @@ int main(int argc, char *argv[]){
     
     /*4.a)*/    
        
-    normal_frequencies(results, sample, mean, s2*((sample-1)/(double)sample), deltab);
-    lognormal_frequencies(results, sample, ln_mean, ln_s2, deltab);
-    gamma_frequencies(results, sample, alpha, beta, gamma_fn, deltab);
+    normal_frequencies(results, sample, mean, s2*((sample-1)/(double)sample), 0.05);
+    lognormal_frequencies(results, sample, ln_mean, ln_s2, 0.05);
+    gamma_frequencies(results, sample, alpha, beta, gamma_fn, 0.05);
     
     /*4.b)*/
     
